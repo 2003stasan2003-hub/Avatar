@@ -13,17 +13,14 @@
     button { padding: 12px 20px; border-radius: 5px; border: none; background: #007bff; color: white; cursor: pointer; font-weight: bold; }
     button:hover { background: #0056b3; }
   </style>
-  <!-- Підключення Three.js та OrbitControls -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
 </head>
 <body>
 
-  <!-- Ліва частина: 3D Аватар -->
   <div id="left-avatar"></div>
 
-  <!-- Права частина: Чат -->
   <div id="right-chat">
     <h2>ШІ Асистент</h2>
     <div id="chat-box"></div>
@@ -35,6 +32,7 @@
   </div>
 
   <script>
+    // 🔑 Переконайтеся, що тут вказано ваш правильний API-ключ з Google AI Studio
     const GEMINI_API_KEY = "ВАШ_БЕЗКОШТОВНИЙ_API_KEY";
 
     // --- 1. 3D Сцена ---
@@ -54,32 +52,26 @@
     controls.enableDamping = true;
     controls.target.set(0, 1, 0);
 
-    // Освітлення
     const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
     scene.add(ambientLight);
     const dirLight = new THREE.DirectionalLight(0xffffff, 1);
     dirLight.position.set(2, 4, 2);
     scene.add(dirLight);
 
-    // Завантаження 3D-моделі
     let avatar, mixer;
     const clock = new THREE.Clock();
     const loader = new THREE.GLTFLoader();
 
-    // Надійна безкоштовна 3D-модель (анімований персонаж)
     loader.load('https://threejs.org/examples/models/gltf/RobotExpressive/RobotExpressive.glb', (gltf) => {
       avatar = gltf.scene;
       avatar.position.set(0, 0, 0);
       scene.add(avatar);
 
-      // Запуск анімації дихання / очікування
       if (gltf.animations && gltf.animations.length) {
         mixer = new THREE.AnimationMixer(avatar);
         const idleClip = gltf.animations.find(a => a.name === 'Idle' || a.name === 'Wave') || gltf.animations[0];
         if (idleClip) mixer.clipAction(idleClip).play();
       }
-    }, undefined, (error) => {
-      console.error('Помилка завантаження 3D моделі:', error);
     });
 
     function animate() {
@@ -117,7 +109,7 @@
       }
     }
 
-    // --- 3. Зв'язок з Gemini ШІ ---
+    // --- 3. Зв'язок з Gemini ШІ (Виправлена обробка помилок) ---
     async function sendMessage() {
       const input = document.getElementById('user-input');
       const chatBox = document.getElementById('chat-box');
@@ -135,15 +127,22 @@
         });
 
         const data = await response.json();
-        const reply = data.candidates[0].content.parts[0].text;
 
-        chatBox.innerHTML += `<p><b>ШІ:</b> ${reply}</p>`;
-        chatBox.scrollTop = chatBox.scrollHeight;
+        if (data.error) {
+          throw new Error(data.error.message || 'Помилка API');
+        }
 
-        // Озвучування відповіді
-        const utterance = new SpeechSynthesisUtterance(reply);
-        utterance.lang = 'uk-UA';
-        window.speechSynthesis.speak(utterance);
+        if (data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts) {
+          const reply = data.candidates[0].content.parts[0].text;
+          chatBox.innerHTML += `<p><b>ШІ:</b> ${reply}</p>`;
+          chatBox.scrollTop = chatBox.scrollHeight;
+
+          const utterance = new SpeechSynthesisUtterance(reply);
+          utterance.lang = 'uk-UA';
+          window.speechSynthesis.speak(utterance);
+        } else {
+          chatBox.innerHTML += `<p style="color:orange;">ШІ не зміг згенерувати відповідь. Спробуйте ще раз.</p>`;
+        }
 
       } catch (err) {
         chatBox.innerHTML += `<p style="color:red;">Помилка: ${err.message}</p>`;
