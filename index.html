@@ -32,8 +32,8 @@
   </div>
 
   <script>
-    // 🔑 Переконайтеся, що тут вказано ваш правильний API-ключ з Google AI Studio
-    const GEMINI_API_KEY = "AQ.Ab8RN6LriDCts8CrcMkeAipv_71KQFVuUjRC6SAfaTk0KJwL6w";
+    // 🔑 Вставити ваш ключ AQ.Ab8... у лапки
+    const GEMINI_API_KEY = "AQ.Ab8RN6KAp01VDzUCfAYtLVgBABCTEUu1Bv7bMEACVBDazzQ8tw";
 
     // --- 1. 3D Сцена ---
     const container = document.getElementById('left-avatar');
@@ -109,7 +109,7 @@
       }
     }
 
-    // --- 3. Зв'язок з Gemini ШІ (Виправлена обробка помилок) ---
+    // --- 3. Чистий запит для ключів AQ. ---
     async function sendMessage() {
       const input = document.getElementById('user-input');
       const chatBox = document.getElementById('chat-box');
@@ -120,9 +120,16 @@
       input.value = '';
 
       try {
-        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
+        const cleanKey = GEMINI_API_KEY.trim();
+
+        // Працює з будь-яким типом ключа (AQ. або AIza)
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${cleanKey}`;
+
+        const response = await fetch(url, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: {
+            'Content-Type': 'application/json'
+          },
           body: JSON.stringify({ contents: [{ parts: [{ text: message }] }] })
         });
 
@@ -141,7 +148,7 @@
           utterance.lang = 'uk-UA';
           window.speechSynthesis.speak(utterance);
         } else {
-          chatBox.innerHTML += `<p style="color:orange;">ШІ не зміг згенерувати відповідь. Спробуйте ще раз.</p>`;
+          chatBox.innerHTML += `<p style="color:orange;">ШІ не зміг сформувати відповідь. Спробуйте ще раз.</p>`;
         }
 
       } catch (err) {
