@@ -32,15 +32,8 @@
   </div>
 
   <script>
-    // 🔑 Скопіюйте сюди свій ключ з Google AI Studio
+    // 🔑 Вставте сюди свій API ключ з Google AI Studio
     const GEMINI_API_KEY = "AQ.Ab8RN6KAp01VDzUCfAYtLVgBABCTEUu1Bv7bMEACVBDazzQ8tw";
-
-    // Список моделей для автоматичного переключення
-    const MODELS_TO_TRY = [
-      'gemini-2.5-flash',
-      'gemini-1.5-flash',
-      'gemini-2.0-flash-exp'
-    ];
 
     // --- 1. 3D Сцена ---
     const container = document.getElementById('left-avatar');
@@ -116,7 +109,7 @@
       }
     }
 
-    // --- 3. Універсальна обробка запитів ---
+    // --- 3. Надійний запит до актуальної моделі gemini-2.5-flash ---
     async function sendMessage() {
       const input = document.getElementById('user-input');
       const chatBox = document.getElementById('chat-box');
@@ -126,44 +119,36 @@
       chatBox.innerHTML += `<p><b>Ви:</b> ${message}</p>`;
       input.value = '';
 
-      const cleanKey = GEMINI_API_KEY.trim();
-      let lastError = null;
-      let success = false;
+      try {
+        const cleanKey = GEMINI_API_KEY.trim();
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${cleanKey}`;
 
-      for (const modelName of MODELS_TO_TRY) {
-        try {
-          const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${cleanKey}`;
-          const response = await fetch(url, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ contents: [{ parts: [{ text: message }] }] })
-          });
+        const response = await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ contents: [{ parts: [{ text: message }] }] })
+        });
 
-          const data = await response.json();
+        const data = await response.json();
 
-          if (data.error) {
-            lastError = data.error.message;
-            continue; // Якщо модель недоступна, пробуємо наступну
-          }
-
-          if (data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts) {
-            const reply = data.candidates[0].content.parts[0].text;
-            chatBox.innerHTML += `<p><b>ШІ:</b> ${reply}</p>`;
-            chatBox.scrollTop = chatBox.scrollHeight;
-
-            const utterance = new SpeechSynthesisUtterance(reply);
-            utterance.lang = 'uk-UA';
-            window.speechSynthesis.speak(utterance);
-            success = true;
-            break;
-          }
-        } catch (err) {
-          lastError = err.message;
+        if (data.error) {
+          throw new Error(data.error.message || 'Помилка API');
         }
-      }
 
-      if (!success) {
-        chatBox.innerHTML += `<p style="color:red;">Помилка: ${lastError || 'Не вдалося отримати відповідь'}</p>`;
+        if (data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts) {
+          const reply = data.candidates[0].content.parts[0].text;
+          chatBox.innerHTML += `<p><b>ШІ:</b> ${reply}</p>`;
+          chatBox.scrollTop = chatBox.scrollHeight;
+
+          const utterance = new SpeechSynthesisUtterance(reply);
+          utterance.lang = 'uk-UA';
+          window.speechSynthesis.speak(utterance);
+        } else {
+          chatBox.innerHTML += `<p style="color:orange;">ШІ не зміг сформувати відповідь. Спробуйте ще раз.</p>`;
+        }
+
+      } catch (err) {
+        chatBox.innerHTML += `<p style="color:red;">Помилка: ${err.message}</p>`;
       }
     }
   </script>
