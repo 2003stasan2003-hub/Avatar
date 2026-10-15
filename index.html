@@ -32,7 +32,7 @@
   </div>
 
   <script>
-    // 🔑 Вставте сюди свій API ключ з Google AI Studio
+    // 🔑 Встановіть ваш API ключ з Google AI Studio
     const GEMINI_API_KEY = "AQ.Ab8RN6KAp01VDzUCfAYtLVgBABCTEUu1Bv7bMEACVBDazzQ8tw";
 
     // --- 1. 3D Сцена ---
@@ -109,7 +109,7 @@
       }
     }
 
-    // --- 3. Надійний запит до актуальної моделі gemini-2.5-flash ---
+    // --- 3. Надійний запит до моделі gemini-1.5-flash ---
     async function sendMessage() {
       const input = document.getElementById('user-input');
       const chatBox = document.getElementById('chat-box');
@@ -121,7 +121,7 @@
 
       try {
         const cleanKey = GEMINI_API_KEY.trim();
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${cleanKey}`;
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${cleanKey}`;
 
         const response = await fetch(url, {
           method: 'POST',
