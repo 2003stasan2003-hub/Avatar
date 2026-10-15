@@ -32,8 +32,8 @@
   </div>
 
   <script>
-    // 🔑 Вставте сюди скопійований ключ Groq (gsk_...)
-    const GROQ_API_KEY = "gsk_ВАШ_КЛЮЧ_З_GROQ";
+    // 🔑 Вставте сюди свій ключ Groq (починається на gsk_...)
+    const GROQ_API_KEY = "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";
 
     // --- 1. 3D Сцена ---
     const container = document.getElementById('left-avatar');
@@ -109,7 +109,7 @@
       }
     }
 
-    // --- 3. Прямий запит до Groq API (з правильною моделлю) ---
+    // --- 3. Прямий запит до Groq API ---
     async function sendMessage() {
       const input = document.getElementById('user-input');
       const chatBox = document.getElementById('chat-box');
