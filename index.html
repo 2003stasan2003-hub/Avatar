@@ -32,10 +32,10 @@
   </div>
 
   <script>
-    // 🔑 Вставте сюди свій ключ Groq (починається на gsk_...)
-    const GROQ_API_KEY = "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";
+    // Groq API Key
+    const GROQ_API_KEY = "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";
 
-    // --- 1. 3D Сцена ---
+    // --- 1. 3D Scene ---
     const container = document.getElementById('left-avatar');
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0x1a1a2e);
@@ -89,7 +89,7 @@
       renderer.setSize(container.clientWidth, window.innerHeight);
     });
 
-    // --- 2. Голосовий ввід ---
+    // --- 2. Speech Recognition ---
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     let recognition;
     if (SpeechRecognition) {
@@ -109,7 +109,7 @@
       }
     }
 
-    // --- 3. Прямий запит до Groq API ---
+    // --- 3. Request to Groq API ---
     async function sendMessage() {
       const input = document.getElementById('user-input');
       const chatBox = document.getElementById('chat-box');
@@ -120,11 +120,13 @@
       input.value = '';
 
       try {
+        const cleanKey = GROQ_API_KEY.replace(/[^\x00-\x7F]/g, "").trim();
+
         const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
           method: 'POST',
           headers: { 
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${GROQ_API_KEY.trim()}`
+            'Authorization': 'Bearer ' + cleanKey
           },
           body: JSON.stringify({
             model: "llama-3.1-8b-instant",
@@ -138,7 +140,7 @@
         const data = await response.json();
 
         if (data.error) {
-          throw new Error(data.error.message || 'Помилка API');
+          throw new Error(data.error.message || 'API Error');
         }
 
         if (data.choices && data.choices[0] && data.choices[0].message) {
