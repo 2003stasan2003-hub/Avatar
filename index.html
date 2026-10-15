@@ -33,7 +33,7 @@
 
   <script>
     // 🔑 Вставте сюди скопійований ключ Groq (gsk_...)
-    const GROQ_API_KEY = "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";
+    const GROQ_API_KEY = "gsk_ВАШ_КЛЮЧ_З_GROQ";
 
     // --- 1. 3D Сцена ---
     const container = document.getElementById('left-avatar');
@@ -89,4 +89,71 @@
       renderer.setSize(container.clientWidth, window.innerHeight);
     });
 
-    // --- 2. Голосовий
+    // --- 2. Голосовий ввід ---
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    let recognition;
+    if (SpeechRecognition) {
+      recognition = new SpeechRecognition();
+      recognition.lang = 'uk-UA';
+      recognition.onresult = function(event) {
+        document.getElementById('user-input').value = event.results[0][0].transcript;
+        sendMessage();
+      };
+    }
+
+    function startVoice() {
+      if (recognition) {
+        recognition.start();
+      } else {
+        alert('Голосовий ввід не підтримується у цьому браузері.');
+      }
+    }
+
+    // --- 3. Прямий запит до Groq API (з правильною моделлю) ---
+    async function sendMessage() {
+      const input = document.getElementById('user-input');
+      const chatBox = document.getElementById('chat-box');
+      const message = input.value;
+      if (!message) return;
+
+      chatBox.innerHTML += `<p><b>Ви:</b> ${message}</p>`;
+      input.value = '';
+
+      try {
+        const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+          method: 'POST',
+          headers: { 
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${GROQ_API_KEY.trim()}`
+          },
+          body: JSON.stringify({
+            model: "llama-3.1-8b-instant",
+            messages: [
+              { role: "system", content: "Ти україномовний голосовий асистент. Відповідай виключно українською мовою, коротко, зрозуміло та приязно." },
+              { role: "user", content: message }
+            ]
+          })
+        });
+
+        const data = await response.json();
+
+        if (data.error) {
+          throw new Error(data.error.message || 'Помилка API');
+        }
+
+        if (data.choices && data.choices[0] && data.choices[0].message) {
+          const reply = data.choices[0].message.content;
+          chatBox.innerHTML += `<p><b>ШІ:</b> ${reply}</p>`;
+          chatBox.scrollTop = chatBox.scrollHeight;
+
+          const utterance = new SpeechSynthesisUtterance(reply);
+          utterance.lang = 'uk-UA';
+          window.speechSynthesis.speak(utterance);
+        }
+      } catch (err) {
+        chatBox.innerHTML += `<p style="color:red;">Помилка: ${err.message}</p>`;
+      }
+    }
+  </script>
+</body>
+</html>
