@@ -5,7 +5,7 @@
   <title>ШІ Асистент з 3D Аватаром</title>
   <style>
     body { margin: 0; display: flex; height: 100vh; font-family: Arial, sans-serif; background: #121212; color: white; }
-    #left-avatar { width: 50%; height: 100%; border-right: 2px solid #333; }
+    #left-avatar { width: 50%; height: 100%; border-right: 2px solid #333; position: relative; }
     #right-chat { width: 50%; display: flex; flex-direction: column; padding: 20px; box-sizing: border-box; }
     #chat-box { flex: 1; overflow-y: auto; border: 1px solid #333; padding: 15px; margin-bottom: 10px; border-radius: 8px; background: #1e1e1e; }
     .controls { display: flex; gap: 10px; }
@@ -13,9 +13,10 @@
     button { padding: 12px 20px; border-radius: 5px; border: none; background: #007bff; color: white; cursor: pointer; font-weight: bold; }
     button:hover { background: #0056b3; }
   </style>
-  <!-- Підключення бібліотеки Three.js для 3D -->
+  <!-- Підключення Three.js та OrbitControls -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
 </head>
 <body>
 
@@ -34,53 +35,87 @@
   </div>
 
   <script>
-    // 🔑 Вставте сюди свій ключ з вкладки "Ключі API | Google AI Studio", яка у вас відкрита!
-    const GEMINI_API_KEY = "AQ.Ab8RN6LriDCts8CrcMkeAipv_71KQFVuUjRC6SAfaTk0KJwL6w";
+    const GEMINI_API_KEY = "ВАШ_БЕЗКОШТОВНИЙ_API_KEY";
 
     // --- 1. 3D Сцена ---
     const container = document.getElementById('left-avatar');
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x121212);
+    scene.background = new THREE.Color(0x1a1a2e);
 
     const camera = new THREE.PerspectiveCamera(45, container.clientWidth / window.innerHeight, 0.1, 1000);
-    camera.position.set(0, 1.4, 2.5);
+    camera.position.set(0, 1.3, 2.2);
 
     const renderer = new THREE.WebGLRenderer({ antialias: true });
     renderer.setSize(container.clientWidth, window.innerHeight);
+    renderer.setPixelRatio(window.devicePixelRatio);
     container.appendChild(renderer.domElement);
 
-    const light = new THREE.HemisphereLight(0xffffff, 0x444444, 1.2);
-    scene.add(light);
+    const controls = new THREE.OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.target.set(0, 1, 0);
 
-    // Завантаження готової безкоштовної 3D-моделі
-    let avatar;
+    // Освітлення
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
+    scene.add(ambientLight);
+    const dirLight = new THREE.DirectionalLight(0xffffff, 1);
+    dirLight.position.set(2, 4, 2);
+    scene.add(dirLight);
+
+    // Завантаження 3D-моделі
+    let avatar, mixer;
+    const clock = new THREE.Clock();
     const loader = new THREE.GLTFLoader();
-    loader.load('https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/main/2.0/RobotExpressive/glTF-Binary/RobotExpressive.glb', (gltf) => {
+
+    // Надійна безкоштовна 3D-модель (анімований персонаж)
+    loader.load('https://threejs.org/examples/models/gltf/RobotExpressive/RobotExpressive.glb', (gltf) => {
       avatar = gltf.scene;
       avatar.position.set(0, 0, 0);
       scene.add(avatar);
+
+      // Запуск анімації дихання / очікування
+      if (gltf.animations && gltf.animations.length) {
+        mixer = new THREE.AnimationMixer(avatar);
+        const idleClip = gltf.animations.find(a => a.name === 'Idle' || a.name === 'Wave') || gltf.animations[0];
+        if (idleClip) mixer.clipAction(idleClip).play();
+      }
+    }, undefined, (error) => {
+      console.error('Помилка завантаження 3D моделі:', error);
     });
 
     function animate() {
       requestAnimationFrame(animate);
-      if (avatar) avatar.rotation.y += 0.005; // Легке обертання для анімації
+      const delta = clock.getDelta();
+      if (mixer) mixer.update(delta);
+      controls.update();
       renderer.render(scene, camera);
     }
     animate();
 
+    window.addEventListener('resize', () => {
+      camera.aspect = container.clientWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(container.clientWidth, window.innerHeight);
+    });
+
     // --- 2. Голосовий ввід ---
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    const recognition = new SpeechRecognition();
-    recognition.lang = 'uk-UA';
-
-    function startVoice() {
-      recognition.start();
+    let recognition;
+    if (SpeechRecognition) {
+      recognition = new SpeechRecognition();
+      recognition.lang = 'uk-UA';
+      recognition.onresult = function(event) {
+        document.getElementById('user-input').value = event.results[0][0].transcript;
+        sendMessage();
+      };
     }
 
-    recognition.onresult = function(event) {
-      document.getElementById('user-input').value = event.results[0][0].transcript;
-      sendMessage();
-    };
+    function startVoice() {
+      if (recognition) {
+        recognition.start();
+      } else {
+        alert('Голосовий ввід не підтримується у цьому браузері. Використовуйте Chrome або Edge.');
+      }
+    }
 
     // --- 3. Зв'язок з Gemini ШІ ---
     async function sendMessage() {
@@ -105,7 +140,7 @@
         chatBox.innerHTML += `<p><b>ШІ:</b> ${reply}</p>`;
         chatBox.scrollTop = chatBox.scrollHeight;
 
-        // Озвучка відповіді
+        // Озвучування відповіді
         const utterance = new SpeechSynthesisUtterance(reply);
         utterance.lang = 'uk-UA';
         window.speechSynthesis.speak(utterance);
