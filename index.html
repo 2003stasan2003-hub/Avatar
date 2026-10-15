@@ -29,7 +29,7 @@
 
   <script>
     // Groq API Key configuration
-    const GROQ_API_KEY = "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";
+    const GROQ_API_KEY = "gsk_aoSfSrFAVpbJyJD6iWkMdyb3FYGAYF7tzcb5zBCYD9oRhe0dAv";
 
     async function handleSend() {
       const input = document.getElementById('user-input');
@@ -58,7 +58,7 @@
             'Authorization': 'Bearer ' + cleanKey
           },
           body: JSON.stringify({
-            model: "llama-3.1-8b-instant",
+            model: "llama-3.3-70b-versatile",
             messages: [
               { role: "system", content: "You are a helpful assistant. Reply in the same language the user speaks." },
               { role: "user", content: message }
