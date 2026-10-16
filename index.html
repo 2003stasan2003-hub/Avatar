@@ -8,16 +8,14 @@
     #container { width: 600px; height: 80vh; display: flex; flex-direction: column; padding: 20px; box-sizing: border-box; background: #1e1e1e; border-radius: 10px; border: 1px solid #333; }
     h2 { text-align: center; margin-top: 0; color: #4da6ff; }
     #chat-box { flex: 1; overflow-y: auto; border: 1px solid #444; padding: 15px; margin-bottom: 15px; border-radius: 8px; background: #121212; }
-    .controls { display: flex; gap: 8px; }
+    .controls { display: flex; gap: 10px; }
     input { flex: 1; padding: 12px; border-radius: 5px; border: 1px solid #444; background: #2a2a2a; color: white; font-size: 16px; }
-    button { padding: 12px 14px; border-radius: 5px; border: none; background: #007bff; color: white; cursor: pointer; font-weight: bold; font-size: 15px; }
+    button { padding: 12px 16px; border-radius: 5px; border: none; background: #007bff; color: white; cursor: pointer; font-weight: bold; font-size: 16px; }
     button:hover { background: #0056b3; }
     #mic-btn { background: #28a745; }
     #mic-btn:hover { background: #218838; }
     #stop-btn { background: #dc3545; }
     #stop-btn:hover { background: #c82333; }
-    #key-btn { background: #6c757d; }
-    #key-btn:hover { background: #5a6268; }
     .msg-user { margin-bottom: 12px; }
     .msg-ai { margin-bottom: 12px; color: #4da6ff; }
   </style>
@@ -31,35 +29,13 @@
       <input type="text" id="user-input" placeholder="Напиши або скажи повідомлення...">
       <button id="mic-btn" onclick="toggleListening()" title="Голосовий ввід">🎤</button>
       <button id="stop-btn" onclick="stopAudio()" title="Зупинити озвучку">⏹ Стоп</button>
-      <button id="key-btn" onclick="promptApiKey()" title="Змінити API Ключ">🔑 Ключ</button>
-      <button onclick="handleSend()">Send</button>
+      <button onclick="handleSend()">Відправити</button>
     </div>
   </div>
 
   <script>
+    const GROQ_API_KEY = "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";
     const MODEL_NAME = "openai/gpt-oss-20b";
-
-    // Функція примусового введення та зміни ключа
-    function promptApiKey() {
-      let currentKey = localStorage.getItem("groq_api_key") || "";
-      let newKey = prompt("Введи свій Groq API Key:", currentKey);
-      if (newKey !== null) {
-        localStorage.setItem("groq_api_key", newKey.trim());
-        alert("API ключ успішно збережено в браузері!");
-      }
-    }
-
-    // Функція отримання ключа (якщо немає — запитує автоматично)
-    function getApiKey() {
-      let key = localStorage.getItem("groq_api_key");
-      if (!key) {
-        key = prompt("Введи свій Groq API Key (він збережеться у браузері автоматично):");
-        if (key) {
-          localStorage.setItem("groq_api_key", key.trim());
-        }
-      }
-      return key ? key.trim() : "";
-    }
 
     let recognition = null;
     let isListeningActive = false;
@@ -207,17 +183,13 @@
 
       if (!message) return;
 
-      const apiKey = getApiKey();
-      if (!apiKey) {
-        chatBox.innerHTML += `<div style="color:red;">Помилка: Не введено API ключ! Натисніть кнопку "🔑 Ключ".</div>`;
-        return;
-      }
-
       chatBox.innerHTML += `<div class="msg-user"><b>Ви:</b> ${message}</div>`;
       input.value = '';
       chatBox.scrollTop = chatBox.scrollHeight;
 
       try {
+        const cleanKey = GROQ_API_KEY.replace(/[^\x00-\x7F]/g, "").trim();
+
         chatBox.innerHTML += `<div id="loading" style="color:yellow;">AI думає...</div>`;
         chatBox.scrollTop = chatBox.scrollHeight;
 
@@ -225,7 +197,7 @@
           method: 'POST',
           headers: { 
             'Content-Type': 'application/json',
-            'Authorization': 'Bearer ' + apiKey
+            'Authorization': 'Bearer ' + cleanKey
           },
           body: JSON.stringify({
             model: MODEL_NAME,
