@@ -32,14 +32,13 @@
       <button id="mic-btn" onclick="toggleListening()" title="Голосовий ввід">🎤</button>
       <button id="stop-btn" onclick="stopAudio()" title="Зупинити озвучку">⏹ Стоп</button>
       <button id="key-btn" onclick="promptApiKey()" title="Змінити API Ключ">🔑 Ключ</button>
-      <button onclick="handleSend()">Send</button>
+      <button onclick="handleSend()">Відправити</button>
     </div>
   </div>
 
   <script>
     const MODEL_NAME = "openai/gpt-oss-20b";
 
-    // Функція примусового введення та зміни ключа
     function promptApiKey() {
       let currentKey = localStorage.getItem("groq_api_key") || "";
       let newKey = prompt("Введи свій Groq API Key:", currentKey);
@@ -49,7 +48,6 @@
       }
     }
 
-    // Функція отримання ключа (якщо немає — запитує автоматично)
     function getApiKey() {
       let key = localStorage.getItem("groq_api_key");
       if (!key) {
@@ -253,22 +251,4 @@
         }
 
         if (reply) {
-          chatBox.innerHTML += `<div class="msg-ai"><b>AI:</b> ${reply}</div>`;
-          chatBox.scrollTop = chatBox.scrollHeight;
-          
-          speakText(reply);
-        } else {
-          throw new Error('Отримано порожню відповідь');
-        }
-
-      } catch (err) {
-        const loader = document.getElementById('loading');
-        if (loader) loader.remove();
-        
-        chatBox.innerHTML += `<div style="color:red;">Помилка: ${err.message}</div>`;
-        chatBox.scrollTop = chatBox.scrollHeight;
-      }
-    }
-  </script>
-</body>
-</html>
+          chatBox.innerHTML += `<div class
