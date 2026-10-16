@@ -23,7 +23,7 @@
   <div id="left-avatar">3D Avatar Area</div>
 
   <div id="right-chat">
-    <h2>AI Assistant</h2>
+    <h2>ШІ Асистент</h2>
     <div id="chat-box"></div>
     <div class="controls">
       <input type="text" id="user-input" placeholder="Type or say a message...">
@@ -33,73 +33,71 @@
   </div>
 
   <script>
-   const GROQ_API_KEY = "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";
+    const GROQ_API_KEY = "ТВІЙ_РОБОЧИЙ_КЛЮЧ"; // <--- Встав сюди свій ключ Грок
     const MODEL_NAME = "openai/gpt-oss-20b";
 
-    // Відправка по натисканню Enter
     document.getElementById('user-input').addEventListener('keypress', function(event) {
       if (event.key === 'Enter') {
         handleSend();
       }
     });
 
-    // --- ФУНКЦІЯ РОЗПІЗНАВАННЯ ГОЛОСУ (Speech-to-Text) ---
+    // Голосовий ввід (мікрофон)
     function startListening() {
       const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
       if (!SpeechRecognition) {
-        alert("На жаль, твій браузер не підтримує розпізнавання голосу. Спробуй Chrome!");
+        alert("Браузер не підтримує розпізнавання голосу.");
         return;
       }
 
       const recognition = new SpeechRecognition();
-      recognition.lang = 'uk-UA'; // Встановлюємо українську мову
+      recognition.lang = 'uk-UA';
       const micBtn = document.getElementById('mic-btn');
 
-      micBtn.style.background = '#dc3545;'; // Червоний колір — означає "слухаю..."
+      micBtn.style.background = '#dc3545';
 
       recognition.onresult = function(event) {
         const speechToText = event.results[0][0].transcript;
         document.getElementById('user-input').value = speechToText;
-        micBtn.style.background = '#28a745'; // Повертаємо зелений
-        handleSend(); // Автоматично відправляємо після розпізнавання
+        micBtn.style.background = '#28a745';
+        handleSend();
       };
 
-      recognition.onerror = function() {
-        micBtn.style.background = '#28a745';
-      };
-
-      recognition.onend = function() {
-        micBtn.style.background = '#28a745';
-      };
+      recognition.onerror = function() { micBtn.style.background = '#28a745'; };
+      recognition.onend = function() { micBtn.style.background = '#28a745'; };
 
       recognition.start();
     }
 
-    // --- ФУНКЦІЯ ОЗВУЧЕННЯ ТЕКСТУ (Text-to-Speech) ---
-    function speakText(text) {
-      if ('speechSynthesis' in window) {
-        // Зупиняємо попереднє озвучення, якщо воно ще йде
-        window.speechSynthesis.cancel();
+    // Озвучення через наш Python-сервер
+    async function speakText(text) {
+      try {
+        const response = await fetch('http://localhost:5000/speak', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text: text })
+        });
 
-        const utterance = new SpeechSynthesisUtterance(text);
-        utterance.lang = 'uk-UA'; // Українська мова
-        utterance.rate = 1.0;     // Швидкість мови
-        window.speechSynthesis.speak(utterance);
+        if (!response.ok) throw new Error('Помилка сервера голосу');
+
+        const blob = await response.blob();
+        const audioUrl = URL.createObjectURL(blob);
+        const audio = new Audio(audioUrl);
+        audio.play();
+      } catch (e) {
+        console.error("Не вдалося озвучити:", e);
       }
     }
 
-    // --- ОСНОВНА ЛОГІКА ВІДПРАВКИ ПОВІДОМЛЕНЬ ---
+    // Надсилання повідомлення
     async function handleSend() {
       const input = document.getElementById('user-input');
       const chatBox = document.getElementById('chat-box');
       const message = input.value.trim();
 
-      if (!message) {
-        alert('Please enter a message!');
-        return;
-      }
+      if (!message) return;
 
-      chatBox.innerHTML += `<div class="msg-user"><b>You:</b> ${message}</div>`;
+      chatBox.innerHTML += `<div class="msg-user"><b>Ви:</b> ${message}</div>`;
       input.value = '';
       chatBox.scrollTop = chatBox.scrollHeight;
 
@@ -109,7 +107,7 @@
         chatBox.innerHTML += `<div id="loading" style="color:yellow;">AI is thinking...</div>`;
         chatBox.scrollTop = chatBox.scrollHeight;
 
-      const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+        const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
           method: 'POST',
           headers: { 
             'Content-Type': 'application/json',
@@ -125,7 +123,6 @@
         });
 
         const data = await response.json();
-        
         const loader = document.getElementById('loading');
         if (loader) loader.remove();
 
@@ -133,23 +130,22 @@
           throw new Error(data.error.message || 'API Error');
         }
 
-        if (data.choices && data.choices[0] && data.choices[0].message) {
+        // Броньована перевірка структури відповіді
+        if (data.choices && data.choices.length > 0 && data.choices[0].message) {
           const reply = data.choices[0].message.content;
           chatBox.innerHTML += `<div class="msg-ai"><b>AI:</b> ${reply}</div>`;
           chatBox.scrollTop = chatBox.scrollHeight;
           
-          // Озвучуємо відповідь асистента голосом!
           speakText(reply);
-
         } else {
-          throw new Error('Invalid response format');
+          console.error("Дивна відповідь від API:", data);
+          throw new Error('Отримано порожню або неочікувану відповідь від моделі');
         }
 
       } catch (err) {
         const loader = document.getElementById('loading');
         if (loader) loader.remove();
-        
-        chatBox.innerHTML += `<div style="color:red;">Error: ${err.message}</div>`;
+        chatBox.innerHTML += `<div style="color:red;">Помилка: ${err.message}</div>`;
         chatBox.scrollTop = chatBox.scrollHeight;
       }
     }
