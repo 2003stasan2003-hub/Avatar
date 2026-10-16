@@ -31,8 +31,8 @@
   </div>
 
   <script>
-    // Твій робочий ключ Groq
-    const GROQ_API_KEY = "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";
+    // Твій дійсний робочий ключ Groq
+    const GROQ_API_KEY = "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";
     const MODEL_NAME = "openai/gpt-oss-20b";
 
     document.getElementById('user-input').addEventListener('keypress', function(event) {
@@ -41,7 +41,7 @@
       }
     });
 
-    // Захищене розпізнавання голосу
+    // Захищене розпізнавання голосу через мікрофон
     function startListening() {
       const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
       if (!SpeechRecognition) {
@@ -76,7 +76,7 @@
       recognition.start();
     }
 
-    // Озвучення через локальний Python-сервер
+    // Озвучення відповіді через твій локальний Python-сервер
     async function speakText(text) {
       try {
         const response = await fetch('http://localhost:5000/speak', {
@@ -149,7 +149,7 @@
           chatBox.innerHTML += `<div class="msg-ai"><b>AI:</b> ${reply}</div>`;
           chatBox.scrollTop = chatBox.scrollHeight;
           
-          // Озвучуємо відповідь голосом
+          // Озвучуємо відповідь українським голосом
           speakText(reply);
         } else {
           throw new Error('Отримано порожню відповідь');
