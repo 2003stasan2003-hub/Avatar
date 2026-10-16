@@ -34,7 +34,7 @@
 
   <script>
     const GROQ_API_KEY = "ТВІЙ_РОБОЧИЙ_КЛЮЧ"; // <--- Встав сюди свій ключ Грок
-    const MODEL_NAME = "openai/gpt-oss-20b";
+    const MODEL_NAME = "llama-3.3-70b-versatile"; // Оновлена стабільна модель
 
     document.getElementById('user-input').addEventListener('keypress', function(event) {
       if (event.key === 'Enter') {
@@ -130,16 +130,19 @@
           throw new Error(data.error.message || 'API Error');
         }
 
-        // Броньована перевірка структури відповіді
+        // Абсолютно безпечний парсинг відповіді
+        let reply = "";
         if (data.choices && data.choices.length > 0 && data.choices[0].message) {
-          const reply = data.choices[0].message.content;
+          reply = data.choices[0].message.content;
+        }
+
+        if (reply) {
           chatBox.innerHTML += `<div class="msg-ai"><b>AI:</b> ${reply}</div>`;
           chatBox.scrollTop = chatBox.scrollHeight;
-          
           speakText(reply);
         } else {
-          console.error("Дивна відповідь від API:", data);
-          throw new Error('Отримано порожню або неочікувану відповідь від моделі');
+          console.error("Неочікувана структура JSON від API:", data);
+          throw new Error('Отримано порожню відповідь від моделі');
         }
 
       } catch (err) {
