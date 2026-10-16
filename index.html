@@ -33,7 +33,6 @@
   </div>
 
   <script>
-    // Встав сюди свій чистий ключ Groq (що починається на gsk_)
     const GROQ_API_KEY = "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"; 
     const MODEL_NAME = "llama-3.3-70b-versatile";
 
@@ -43,7 +42,7 @@
       }
     });
 
-    // Голосовий ввід через мікрофон
+    // Повністю захищене голосове введення (без падінь на index 0)
     function startListening() {
       const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
       if (!SpeechRecognition) {
@@ -58,10 +57,18 @@
       micBtn.style.background = '#dc3545';
 
       recognition.onresult = function(event) {
-        const speechToText = event.results[0][0].transcript;
-        document.getElementById('user-input').value = speechToText;
+        try {
+          if (event && event.results && event.results[0] && event.results[0][0]) {
+            const speechToText = event.results[0][0].transcript;
+            if (speechToText) {
+              document.getElementById('user-input').value = speechToText;
+              handleSend();
+            }
+          }
+        } catch (e) {
+          console.error("Помилка розпізнавання голосу:", e);
+        }
         micBtn.style.background = '#28a745';
-        handleSend();
       };
 
       recognition.onerror = function() { micBtn.style.background = '#28a745'; };
@@ -90,7 +97,7 @@
       }
     }
 
-    // Надіслати запит до Groq
+    // Надіслати запит до Groq зброньованою перевіркою
     async function handleSend() {
       const input = document.getElementById('user-input');
       const chatBox = document.getElementById('chat-box');
@@ -108,7 +115,6 @@
         chatBox.innerHTML += `<div id="loading" style="color:yellow;">AI думає...</div>`;
         chatBox.scrollTop = chatBox.scrollHeight;
 
-        // Чіткий запит виключно на офіційний апі Groq
         const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
           method: 'POST',
           headers: { 
@@ -132,9 +138,12 @@
           throw new Error(data.error.message || 'API Error');
         }
 
+        // Абсолютно безпечний пошук відповіді без ризику reading '0'
         let reply = "";
-        if (data.choices && data.choices.length > 0 && data.choices[0].message) {
-          reply = data.choices[0].message.content;
+        if (data && Array.isArray(data.choices) && data.choices.length > 0) {
+          if (data.choices[0] && data.choices[0].message && data.choices[0].message.content) {
+            reply = data.choices[0].message.content;
+          }
         }
 
         if (reply) {
@@ -142,8 +151,8 @@
           chatBox.scrollTop = chatBox.scrollHeight;
           speakText(reply);
         } else {
-          console.error("Повна відповідь від Groq:", data);
-          throw new Error('Отримано порожню відповідь від моделі');
+          console.error("Повна відповідь від Groq містить незвичний формат:", data);
+          throw new Error('Отримано порожню або неочікувану відповідь від моделі');
         }
 
       } catch (err) {
