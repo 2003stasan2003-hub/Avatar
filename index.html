@@ -34,12 +34,23 @@
   </div>
 
   <script>
-    const GROQ_API_KEY = "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";
     const MODEL_NAME = "openai/gpt-oss-20b";
+
+    // Функція отримання ключа (бере з пам'яті браузера або запитує один раз)
+    function getApiKey() {
+      let key = localStorage.getItem("groq_api_key");
+      if (!key) {
+        key = prompt("Введи свій Groq API Key (він збережеться у браузері автоматично):");
+        if (key) {
+          localStorage.setItem("groq_api_key", key.trim());
+        }
+      }
+      return key ? key.trim() : "";
+    }
 
     let recognition = null;
     let isListeningActive = false;
-    let currentAudio = null; // Глобальна змінна для поточного аудіо
+    let currentAudio = null;
 
     document.getElementById('user-input').addEventListener('keypress', function(event) {
       if (event.key === 'Enter') {
@@ -47,7 +58,6 @@
       }
     });
 
-    // Функція примусової зупинки озвучення
     function stopAudio() {
       if (currentAudio) {
         currentAudio.pause();
@@ -57,7 +67,6 @@
       resumeMicAfterAudio();
     }
 
-    // Ініціалізація розпізнавання мови
     function initSpeechRecognition() {
       const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
       if (!SpeechRecognition) {
@@ -125,9 +134,7 @@
 
     let wasListeningBeforeAudio = false;
 
-    // Озвучення через хмарний сервер з захистом від дублювання
     async function speakText(text) {
-      // Зупиняємо попереднє аудіо, якщо воно грало
       stopAudio();
 
       wasListeningBeforeAudio = isListeningActive;
@@ -187,13 +194,17 @@
 
       if (!message) return;
 
+      const apiKey = getApiKey();
+      if (!apiKey) {
+        chatBox.innerHTML += `<div style="color:red;">Помилка: Не введено API ключ!</div>`;
+        return;
+      }
+
       chatBox.innerHTML += `<div class="msg-user"><b>Ви:</b> ${message}</div>`;
       input.value = '';
       chatBox.scrollTop = chatBox.scrollHeight;
 
       try {
-        const cleanKey = GROQ_API_KEY.replace(/[^\x00-\x7F]/g, "").trim();
-
         chatBox.innerHTML += `<div id="loading" style="color:yellow;">AI думає...</div>`;
         chatBox.scrollTop = chatBox.scrollHeight;
 
@@ -201,7 +212,7 @@
           method: 'POST',
           headers: { 
             'Content-Type': 'application/json',
-            'Authorization': 'Bearer ' + cleanKey
+            'Authorization': 'Bearer ' + apiKey
           },
           body: JSON.stringify({
             model: MODEL_NAME,
